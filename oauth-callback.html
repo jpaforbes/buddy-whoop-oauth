@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>16-bit Buddy — WHOOP OAuth callback</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      max-width: 40rem;
+      margin: 2rem auto;
+      padding: 0 1.25rem;
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      padding: 0.75rem 1rem;
+      border: 1px solid #8884;
+      border-radius: 8px;
+    }
+    .ok { color: #0a7; }
+    .err { color: #c33; }
+  </style>
+</head>
+<body>
+  <h1>WHOOP OAuth callback</h1>
+  <p id="status">Reading authorization response…</p>
+  <pre id="code" hidden></pre>
+  <p id="hint" hidden>
+    If local capture is running, this tab should bounce to
+    <code>http://127.0.0.1:8767/…</code> automatically.
+    Otherwise copy the code above into
+    <code>whoop_auth.py --code …</code>.
+  </p>
+  <script>
+    const qs = new URLSearchParams(location.search);
+    const status = document.getElementById("status");
+    const codeEl = document.getElementById("code");
+    const hint = document.getElementById("hint");
+    const err = qs.get("error");
+    const code = qs.get("code");
+    const state = qs.get("state") || "";
+    if (err) {
+      status.className = "err";
+      status.textContent = "Authorization failed: " + err +
+        (qs.get("error_description") ? " — " + qs.get("error_description") : "");
+    } else if (code) {
+      status.className = "ok";
+      status.textContent = "Authorization OK. Handing code to local whoop_auth…";
+      codeEl.hidden = false;
+      codeEl.textContent = code;
+      hint.hidden = false;
+      try { navigator.clipboard.writeText(code); } catch (_) {}
+      // Open local capture in a new tab so this page (with the code) stays if
+      // whoop_auth isn't listening yet. Do not location.replace — that loses the code UI.
+      const local = "http://127.0.0.1:8767/capture?" +
+        new URLSearchParams({ code, state }).toString();
+      setTimeout(() => {
+        const w = window.open(local, "_blank");
+        if (!w) {
+          status.textContent = "Popup blocked — copy the code above and paste into whoop_auth --code …";
+        }
+      }, 300);
+    } else {
+      status.textContent = "No code in URL. Register this page as your WHOOP Redirect URI, then run whoop_auth.";
+    }
+  </script>
+</body>
+</html>
